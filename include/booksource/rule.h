@@ -5,7 +5,9 @@
 #include <functional>
 #include <optional>
 #include <regex>
+#include <any>
 #include <booksource/ruledata.h>
+#include <booksource/utils.h>
 
 struct BookInfoRule {
     std::optional<std::string> init = std::nullopt;
@@ -236,6 +238,93 @@ public:
 
 enum RequestMethod {
     GET, POST
+};
+
+class UrlOption {
+private:
+    std::optional<std::string> method = std::nullopt;
+    std::optional<std::string> charset = std::nullopt;
+    std::optional<std::any> headers = std::nullopt;
+    std::optional<std::any> body = std::nullopt;
+
+    std::optional<std::string> origin = std::nullopt;
+
+    std::optional<int> retry = std::nullopt;
+    std::optional<std::string> type = std::nullopt;
+    std::optional<std::any> webView = std::nullopt;
+    std::optional<std::string> webJs = std::nullopt;
+    std::optional<std::string> js = std::nullopt;
+    std::optional<long> serverID = std::nullopt;
+    std::optional<long> webViewDelayTime = std::nullopt;
+public:
+    void setMethod(std::optional<std::string> value) {
+        method = value.has_value() && !value->empty() ? value : std::nullopt;
+    }
+
+    std::optional<std::string> getMethod() {
+        return method;
+    }
+
+    void setCharset(std::optional<std::string> value) {
+        charset = value.has_value() && !value->empty() ? value : std::nullopt;
+    }
+
+    std::optional<std::string> getCharset() {
+        return charset;
+    }
+
+    void setOrigin(std::optional<std::string> value) {
+        origin = value.has_value() && !value->empty() ? value : std::nullopt;
+    }
+
+    std::optional<std::string> getOrigin() {
+        return origin;
+    }
+
+    void setRetry(const std::optional<std::string> &value) {
+        retry = value.has_value() && !value->empty()
+        ? std::optional(std::stoi(*value)) : std::nullopt;
+    }
+
+    int getRetry() const {
+       return retry ? *retry : 0;
+    }
+
+    void setType(std::optional<std::string> value) {
+        type = value.has_value() && !value->empty() ? value : std::nullopt;
+    }
+
+    std::optional<std::string> getType() {
+        return type;
+    }
+
+    bool useWebView() const {
+        if (!webView) return false;
+        if (webView->type() == typeid(std::string)) {
+            const auto str = std::any_cast<std::string>(*webView);
+            if (str.empty()) return false;      // 空字符串返回false
+            if (str == "false") return false;
+        } else if (webView->type() == typeid(bool)) {
+            const auto b = std::any_cast<bool>(*webView);
+            return b;           // webView为false时返回false
+        }
+        return true;
+    }
+
+    void useWebView(const bool value) {
+        webView = value ? std::optional(true) : std::nullopt;
+    }
+
+    void setHeaders(std::optional<std::string> value) {
+        if (!value || value->empty()) {
+            // 若value为null或者空字符串
+            headers = std::nullopt;
+        } else {
+            auto map = JsonUtils::jsonStringToMap(*value);
+            this->headers = map;
+        }
+    }
+
 };
 
 class AnalyzeUrl final : JsExtensions {

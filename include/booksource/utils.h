@@ -26,6 +26,31 @@ namespace JsonUtils {
         return j.dump();
     }
 
+    /**
+     * 将 json 字符串解析为 unordered_map<string, string>
+     * @param jsonStr JSON 格式的字符串
+     * @return map，如果解析失败则返回空 map
+     */
+    inline unordered_map<string, string> jsonStringToMap(const string &jsonStr) {
+        unordered_map<string, string> result;
+        try {
+            json j = json::parse(jsonStr);
+            if (!j.is_object()) {
+                return result; // 必须是 object
+            }
+            for (auto &[key, value] : j.items()) {
+                if (value.is_string()) {
+                    result[key] = value.get<string>();
+                } else {
+                    // 如果不是 string，转成 string 放进去（可按需求调整）
+                    result[key] = value.dump();
+                }
+            }
+        } catch (...) {
+            // 如果解析失败，返回空 map
+        }
+        return result;
+    }
 }
 
 namespace DateUtils {
