@@ -6,6 +6,7 @@
 std::atomic<int> QuickJsEngine::s_nextEngineId{1};
 std::shared_mutex QuickJsEngine::s_engineRegistryMutex;
 std::unordered_map<int, QuickJsEngine*> QuickJsEngine::s_engineRegistry;
+thread_local QuickJsEngine QuickJsEngine::currentEngine = QuickJsEngine();
 
 QuickJsEngine::QuickJsEngine() {
     runtime = JS_NewRuntime();
@@ -74,6 +75,10 @@ QuickJsEngine* QuickJsEngine::getEngineById(const int id) {
         return nullptr;
 
     return it->second;
+}
+
+QuickJsEngine& QuickJsEngine::current() {
+    return currentEngine;
 }
 
 std::string QuickJsEngine::eval(const std::string &code) const {
@@ -185,7 +190,6 @@ static JSValue js_assert(JSContext *ctx,
                          JSValueConst this_val,
                          int argc,
                          JSValueConst *argv) {
-
     if (argc < 1) {
         return JS_ThrowTypeError(ctx, "assert() requires at least 1 argument");
     }
@@ -207,7 +211,6 @@ static JSValue js_assert(JSContext *ctx,
     } else {
         err = JS_ThrowTypeError(ctx, "Assertion failed");
     }
-
     return err;
 }
 

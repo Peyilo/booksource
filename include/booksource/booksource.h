@@ -1,134 +1,253 @@
 #pragma once
 
 #include <string>
+#include <optional>
 #include <cstdint>
+#include <booksource/engine.h>
+#include <nlohmann/json.hpp>
+#include <booksource/constants.h>
+
+using std::optional;
+using std::string;
 
 struct BookInfoRule {
-    std::string init;
-    std::string name;
-    std::string author;
-    std::string intro;
-    std::string kind;
-    std::string lastChapter;
-    std::string updateTime;
-    std::string coverUrl;
-    std::string tocUrl;
-    std::string wordCount;
-    std::string canReName;
-    std::string downloadUrls;
+    optional<string> init = std::nullopt;
+    optional<string> name = std::nullopt;
+    optional<string> author = std::nullopt;
+    optional<string> intro = std::nullopt;
+    optional<string> kind = std::nullopt;
+    optional<string> lastChapter = std::nullopt;
+    optional<string> updateTime = std::nullopt;
+    optional<string> coverUrl = std::nullopt;
+    optional<string> tocUrl = std::nullopt;
+    optional<string> wordCount = std::nullopt;
+    optional<string> canReName = std::nullopt;
+    optional<string> downloadUrls = std::nullopt;
 };
 
 struct BookListRule {
-    std::string bookList;
-    std::string name;
-    std::string author;
-    std::string intro;
-    std::string kind;
-    std::string lastChapter;
-    std::string updateTime;
-    std::string bookUrl;
-    std::string coverUrl;
-    std::string wordCount;
+    optional<string> bookList = std::nullopt;
+    optional<string> name = std::nullopt;
+    optional<string> author = std::nullopt;
+    optional<string> intro = std::nullopt;
+    optional<string> kind = std::nullopt;
+    optional<string> lastChapter = std::nullopt;
+    optional<string> updateTime = std::nullopt;
+    optional<string> bookUrl = std::nullopt;
+    optional<string> coverUrl = std::nullopt;
+    optional<string> wordCount = std::nullopt;
 };
 
 struct ContentRule {
-    std::string content;
-    std::string title;            // 有些网站只能在正文中获取标题
-    std::string nextContentUrl;
-    std::string webJs;
-    std::string sourceRegex;
-    std::string replaceRegex;     // 替换规则
-    std::string imageStyle;       // 默认大小居中, FULL最大宽度
-    std::string imageDecode;      // 图片bytes二次解密js
-    std::string payAction;        // 购买操作, js 或者包含 {{js}} 的 url
+    optional<string> content = std::nullopt;
+    optional<string> title = std::nullopt;
+    optional<string> nextContentUrl = std::nullopt;
+    optional<string> webJs = std::nullopt;
+    optional<string> sourceRegex = std::nullopt;
+    optional<string> replaceRegex = std::nullopt;
+    optional<string> imageStyle = std::nullopt;
+    optional<string> imageDecode = std::nullopt;
+    optional<string> payAction = std::nullopt;
 };
 
-struct ExploreRule: BookListRule {};
+struct ExploreRule : BookListRule {
+};
+
+struct SearchRule : BookListRule {
+    optional<string> checkKeyWord = std::nullopt; // 校验关键字
+};
 
 struct ReviewRule {
-    std::string reviewUrl;        // 段评URL
-    std::string avatarRule;       // 段评发布者头像
-    std::string contentRule;      // 段评内容
-    std::string postTimeRule;     // 段评发布时间
-    std::string reviewQuoteUrl;   // 获取段评回复URL
+    optional<string> reviewUrl = std::nullopt;
+    optional<string> avatarRule = std::nullopt;
+    optional<string> contentRule = std::nullopt;
+    optional<string> postTimeRule = std::nullopt;
+    optional<string> reviewQuoteUrl = std::nullopt;
 
-    std::string voteUpUrl;        // 点赞URL
-    std::string voteDownUrl;      // 点踩URL
-    std::string postReviewUrl;    // 发送回复URL
-    std::string postQuoteUrl;     // 发送回复段评URL
-    std::string deleteUrl;        // 删除段评URL
-};
-
-struct SearchRule: BookListRule {
-    std::string checkKeyWord;     // 校验关键字
+    optional<string> voteUpUrl = std::nullopt;
+    optional<string> voteDownUrl = std::nullopt;
+    optional<string> postReviewUrl = std::nullopt;
+    optional<string> postQuoteUrl = std::nullopt;
+    optional<string> deleteUrl = std::nullopt;
 };
 
 struct TocRule {
-    std::string preUpdateJs;
-    std::string chapterList;
-    std::string chapterName;
-    std::string chapterUrl;
-    std::string formatJs;
-    std::string isVolume;
-    std::string isVip;
-    std::string isPay;
-    std::string updateTime;
-    std::string nextTocUrl;
+    optional<string> preUpdateJs = std::nullopt;
+    optional<string> chapterList = std::nullopt;
+    optional<string> chapterName = std::nullopt;
+    optional<string> chapterUrl = std::nullopt;
+    optional<string> formatJs = std::nullopt;
+    optional<string> isVolume = std::nullopt;
+    optional<string> isVip = std::nullopt;
+    optional<string> isPay = std::nullopt;
+    optional<string> updateTime = std::nullopt;
+    optional<string> nextTocUrl = std::nullopt;
 };
 
-struct BookSource {
-    // 基本信息
-    std::string bookSourceUrl;        // 地址
-    std::string bookSourceName;       // 名称
-    std::string bookSourceGroup;      // 分组
-    int bookSourceType = 0;           // 类型
+class BaseSource;
 
-    std::string bookUrlPattern;       // 详情页 URL 正则
-    int customOrder = 0;              // 手动排序编号
-    bool enabled = true;              // 是否启用
-    bool enabledExplore = true;       // 是否启用发现
+class JsExtensions {
+public:
+    virtual ~JsExtensions() = default;
 
-    // 网络配置
-    std::string jsLib;                // js库
-    bool enabledCookieJar = true;     // 自动 cookie jar
-    std::string concurrentRate;       // 并发率
-    std::string header;               // 请求头
+    virtual BaseSource* getSource() = 0;
+};
 
-    // 登录
-    std::string loginUrl;
-    std::string loginUi;
-    std::string loginCheckJs;
+class BaseSource : public JsExtensions {
+public:
+    optional<string> concurrentRate = std::nullopt;
+    optional<string> loginUrl = std::nullopt;
+    optional<string> loginUi = std::nullopt;
+    optional<string> header = std::nullopt;
+    optional<bool> enabledCookieJar = std::nullopt;
+    optional<string> jsLib = std::nullopt;
 
-    // 封面解密
-    std::string coverDecodeJs;
+    virtual string getTag() = 0;
 
-    // 注释
-    std::string bookSourceComment;
-    std::string variableComment;
+    virtual string getKey() = 0;
 
-    // 排序相关
-    int64_t lastUpdateTime = 0;       // 最后更新时间
-    int64_t respondTime = 180000;     // 响应时间 ms
-    int weight = 0;                   // 智能排序权重
+    BaseSource* getSource() override {
+        return this;
+    }
 
-    // 发现
-    std::string exploreUrl;
-    std::string exploreScreen;
-    ExploreRule ruleExplore;
+    optional<string> getLoginJs() const {
+        if (!loginUrl.has_value()) {
+            return std::nullopt;
+        }
+        const std::string &loginJs = *loginUrl;
+        // @js:xxxx
+        if (loginJs.rfind("@js:", 0) == 0) {
+            // startsWith("@js:")
+            return loginJs.substr(4);
+        }
+        // <js>xxx</js>
+        if (loginJs.rfind("<js>", 0) == 0) {
+            // startsWith("<js>")
+            size_t endPos = loginJs.find_last_of('<');
+            if (endPos != std::string::npos && endPos > 4) {
+                return loginJs.substr(4, endPos - 4);
+            }
+        }
+        // default
+        return loginJs;
+    }
 
-    // 搜索
-    std::string searchUrl;
-    SearchRule ruleSearch;
+    std::unordered_map<string, string> getHeaderMap(bool hasLoginHeader = false) {
+        std::unordered_map<string, string> result;
+        if (header.has_value()) {
+            try {
+                string json;
+                const string &headerStr = header.value();
+                if (headerStr.rfind("@js:", 0) == 0) {
+                    // startsWith("@js:")
+                    json = evalJS(headerStr.substr(4));
+                } else if (headerStr.rfind("<js>", 0) == 0) {
+                    // startsWith("<js>")
+                    size_t endPos = headerStr.find_last_of('<');
+                    json = evalJS(headerStr.substr(4, endPos - 4));
+                } else {
+                    json = headerStr;
+                }
+                parseHeaderMap(json, result);
+            } catch (...) {
+                // TODO: 输出错误日志
+            }
+        }
+        // 如果没有UA，使用默认的UA
+        if (!mapContainsIgnoreCase(result, Constants::UA_KEY)) {
+            result[Constants::UA_KEY] = Constants::UA_DEFAULT_VALUE;
+        }
+        if (hasLoginHeader) {
+            // TODO: Cache process
+        }
+        return result;
+    }
 
-    // 书籍详情
-    BookInfoRule ruleBookInfo;
+    string evalJS(string jsStr) {
+        auto engine = QuickJsEngine::current();
+        engine.reset();
+        // TODO: support more binding variable
+        engine.addValue("baseUrl", getKey());
+        return engine.eval(jsStr);
+    }
 
-    // 目录
-    TocRule ruleToc;
+private:
+    static void parseHeaderMap(
+        const std::string &jsonStr,
+        std::unordered_map<std::string, std::string> &headerMap
+    ) {
+        using json = nlohmann::json;
+        json j = json::parse(jsonStr);
+        if (!j.is_object()) return;
+        for (auto &[k, v]: j.items()) {
+            if (v.is_string())
+                headerMap[k] = v.get<std::string>();
+            else {
+                throw std::runtime_error("invalid header");
+            }
+        }
+    }
 
-    // 正文
-    ContentRule ruleContent;
+    // 忽略key的大小写，查找map中是否存在指定的key
+    static bool mapContainsIgnoreCase(
+        const std::unordered_map<std::string, std::string>& m,
+        const std::string& key)
+    {
+        std::string keyLower = key;
+        std::ranges::transform(keyLower, keyLower.begin(), ::tolower);
 
-    // 段评
-    ReviewRule ruleReview;
+        for (const auto &k: m | std::views::keys) {
+            std::string kLower = k;
+            std::ranges::transform(kLower, kLower.begin(), ::tolower);
+            if (kLower == keyLower)
+                return true;
+        }
+        return false;
+    }
+};
+
+class BookSource final : public BaseSource {
+public:
+    string bookSourceUrl = "";
+    string bookSourceName = "";
+    optional<string> bookSourceGroup = std::nullopt;
+    int bookSourceType = 0;
+    optional<string> bookUrlPattern = std::nullopt;
+    int customOrder = 0;
+    bool enabled = true;
+    bool enabledExplore = true;
+    optional<string> jsLib = std::nullopt;
+    optional<bool> enabledCookieJar = true;
+    optional<string> concurrentRate = std::nullopt;
+    optional<string> header = std::nullopt;
+    optional<string> loginUrl = std::nullopt;
+    optional<string> loginUi = std::nullopt;
+    optional<string> loginCheckJs = std::nullopt;
+    optional<string> coverDecodeJs = std::nullopt;
+    optional<string> bookSourceComment = std::nullopt;
+    optional<string> variableComment = std::nullopt;
+    int64_t lastUpdateTime = 0;
+    int64_t respondTime = 180000L;
+    int weight = 0;
+    optional<string> exploreUrl = std::nullopt;
+    optional<string> exploreScreen = std::nullopt;
+    optional<ExploreRule> ruleExplore = std::nullopt;
+    optional<string> searchUrl = std::nullopt;
+    optional<SearchRule> ruleSearch = std::nullopt;
+    optional<BookInfoRule> ruleBookInfo = std::nullopt;
+    optional<TocRule> ruleToc = std::nullopt;
+    optional<ContentRule> ruleContent = std::nullopt;
+    optional<ReviewRule> ruleReview = std::nullopt;
+
+public:
+    string getTag() override {
+        return bookSourceName;
+    }
+
+    /**
+     * 获取唯一标识key：这里使用书源url作为书源的唯一标识
+     */
+    string getKey() override {
+        return bookSourceUrl;
+    }
 };

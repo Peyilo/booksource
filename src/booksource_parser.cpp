@@ -238,23 +238,35 @@ static void parse(const json &j, BookSource &o) {
             o.searchUrl = value.get<std::string>();
 
         // 嵌套字段处理
-        else if (key == "ruleExplore")
-            parse(value, o.ruleExplore);
+        else if (key == "ruleExplore") {
+            if (!o.ruleExplore) o.ruleExplore.emplace();
+            parse(value, *o.ruleExplore);
+        }
 
-        else if (key == "ruleSearch")
-            parse(value, o.ruleSearch);
+        else if (key == "ruleSearch") {
+            if (!o.ruleSearch) o.ruleSearch.emplace();
+            parse(value, *o.ruleSearch);
+        }
 
-        else if (key == "ruleBookInfo")
-            parse(value, o.ruleBookInfo);
+        else if (key == "ruleBookInfo") {
+            if (!o.ruleBookInfo) o.ruleBookInfo.emplace();
+            parse(value, *o.ruleBookInfo);
+        }
 
-        else if (key == "ruleToc")
-            parse(value, o.ruleToc);
+        else if (key == "ruleToc") {
+            if (!o.ruleToc) o.ruleToc.emplace();
+            parse(value, *o.ruleToc);
+        }
 
-        else if (key == "ruleContent")
-            parse(value, o.ruleContent);
+        else if (key == "ruleContent") {
+            if (!o.ruleContent) o.ruleContent.emplace();
+            parse(value, *o.ruleContent);
+        }
 
-        else if (key == "ruleReview")
-            parse(value, o.ruleReview);
+        else if (key == "ruleReview") {
+            if (!o.ruleReview) o.ruleReview.emplace();
+            parse(value, *o.ruleReview);
+        }
 
         // 未知字段
         else {

@@ -131,10 +131,14 @@ public:
 
     int getEngineId() const { return engineID; }
 
+public:
     // 通过 JSContext 反查对应的 QuickJsEngine*
     static QuickJsEngine *fromContext(JSContext *ctx);
 
     static QuickJsEngine *getEngineById(int id);
+
+    // 获取当前线程的引擎实例
+    static QuickJsEngine& current();
 
 private:
     JSRuntime *runtime = nullptr;
@@ -165,6 +169,7 @@ private:
     static std::atomic<int> s_nextEngineId;
     static std::shared_mutex s_engineRegistryMutex;
     static std::unordered_map<int, QuickJsEngine *> s_engineRegistry;
+    thread_local static QuickJsEngine currentEngine;
 };
 
 // int
