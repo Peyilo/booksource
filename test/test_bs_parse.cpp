@@ -3,16 +3,16 @@
 //
 
 #include <iostream>
-#include <booksource/booksource_parser.h>
+#include <booksource/rule.h>
 #include "test_utils.h"
 #include <curl/curl.h>
 
 // 写入回调：把收到的数据 append 到 std::string
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
 {
-    size_t totalSize = size * nmemb;
-    std::string* buffer = (std::string*)userp;
-    buffer->append((char*)contents, totalSize);
+    const size_t totalSize = size * nmemb;
+    auto* buffer = static_cast<std::string *>(userp);
+    buffer->append(static_cast<char *>(contents), totalSize);
     return totalSize;
 }
 

@@ -2,7 +2,7 @@
 #include <string>
 #include <booksource/engine.h>
 #include <booksource/bind.h>
-#include <booksource/booksource_parser.h>
+#include <booksource/rule.h>
 #include <cassert>
 #include <fstream>
 #include "test_utils.h"
@@ -41,8 +41,6 @@ void exeJs(const QuickJsEngine &engine, const std::string &code) {
     std::cout << "[Result] " << res << std::endl;
     }
 }
-
-
 
 int main() {
     QuickJsEngine engine;
@@ -102,7 +100,7 @@ int main() {
     exeJs(engine, "source.ruleToc.chapterList");
 
     // 测试在cpp修改以后，会不会影响js中的变量
-    source.ruleToc.chapterList = "this is rule after changed";
+    source.ruleToc.value().chapterList = "this is rule after changed";
     exeJs(engine, "assert(source.ruleToc.chapterList == \"this is rule after changed\")");
     return 0;
 }

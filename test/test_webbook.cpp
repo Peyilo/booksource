@@ -2,7 +2,7 @@
 // Created by 夏莳 on 2025/11/30.
 //
 #include <booksource/webbook.h>
-#include <booksource/booksource_parser.h>
+#include <booksource/rule.h>
 #include <iostream>
 #include "test_utils.h"
 

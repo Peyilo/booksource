@@ -1,6 +1,6 @@
 #pragma once
 
-#include <booksource/booksource.h>
+#include <booksource/rule.h>
 #include <booksource/engine.h>
 
 namespace BindingMacros {
@@ -15,6 +15,7 @@ JsBinder<T>::setClassName(#T);
 
 } // namespace Binding
 
+// TODO: 由于BookSource引入了optional，绑定需要进行特殊处理
 namespace BookSourceBinding {
 
     using namespace BindingMacros;
