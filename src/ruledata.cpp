@@ -58,6 +58,13 @@ optional<std::string> RuleData::getBigVariable(const std::string &key) const {
     return std::nullopt;
 }
 
+bool BaseBook::putVariable(const string &key, const optional<string> &value) {
+    if (RuleData::putVariable(key, value)) {
+        variable = JsonUtils::mapToJsonString(variableMap);         // map转文本
+    }
+    return true;
+}
+
 BookChapter::BookChapter(
         string url,
         string title,
@@ -93,7 +100,7 @@ BookChapter::BookChapter(
         variable(std::move(variable)) {}
 
 bool BookChapter::putVariable(const string &key, const optional<string> &value) {
-    if (RuleDataInterface::putVariable(key, value)) {
+    if (RuleData::putVariable(key, value)) {
         variable = JsonUtils::mapToJsonString(variableMap);         // map转文本
     }
     return true;

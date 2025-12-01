@@ -300,3 +300,30 @@ namespace NetworkUtils {
     // 始终返回 true
     inline bool isAvailable() { return true; }
 }
+
+namespace StringUtils {
+    inline bool isNullOrEmpty(const std::optional<std::string> &s) {
+        if (!s.has_value()) {
+            return true;
+        }
+        const auto str = s.value();
+        return str.empty();
+    }
+
+    static void trim(std::string &s) {
+        auto notSpace = [](unsigned char c) { return !std::isspace(c); };
+        s.erase(s.begin(), std::ranges::find_if(s, notSpace));
+        s.erase(std::find_if(s.rbegin(), s.rend(), notSpace).base(), s.end());
+    }
+
+    inline bool startsWithIgnoreCase(const std::string& str, const std::string& prefix) {
+        if (str.size() < prefix.size()) return false;
+
+        for (size_t i = 0; i < prefix.size(); i++) {
+            if (std::tolower(str[i]) != std::tolower(prefix[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+}

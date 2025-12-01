@@ -38,12 +38,6 @@ static bool mapContainsIgnoreCase(
     return false;
 }
 
-static void trim(std::string &s) {
-    auto notSpace = [](unsigned char c) { return !std::isspace(c); };
-    s.erase(s.begin(), std::ranges::find_if(s, notSpace));
-    s.erase(std::find_if(s.rbegin(), s.rend(), notSpace).base(), s.end());
-}
-
 static std::string replaceAll(
     const std::string &src,
     const std::string &from,
@@ -624,6 +618,35 @@ void RuleAnalyzer::splitRuleRec(const std::vector<std::string> &split) {
     rule.push_back(queue.substr(startX));
 }
 
+SourceRule::SourceRule(
+        AnalyzeRule &_outer,
+        const std::string &ruleStr,
+        const Mode mode): outer(_outer), mode(mode) {
+    if (mode == Js || mode == Regex) {
+        rule = ruleStr;
+    } else if (StringUtils::startsWithIgnoreCase(ruleStr, "@CSS")) {
+        this->mode = Default;
+        rule = ruleStr;
+    } else if (ruleStr.starts_with("@@")) {
+        this->mode = Default;
+        rule = ruleStr.substr(2);
+    } else if (StringUtils::startsWithIgnoreCase(ruleStr, "@XPath")) {
+        this->mode = XPath;
+        rule = ruleStr.substr(7);
+    } else if (StringUtils::startsWithIgnoreCase(ruleStr, "@Json")) {
+        this->mode = Json;
+        rule = ruleStr.substr(6);
+    } else if (outer.isJSON || ruleStr.starts_with("$.") || ruleStr.starts_with("$[")) {
+        this->mode = Json;
+        rule = ruleStr;
+    } else if (ruleStr.starts_with("/")) {      // XPath特征很明显,无需配置单独的识别标头
+        this->mode = XPath;
+        rule = ruleStr;
+    } else {
+        rule = ruleStr;
+    }
+}
+
 AnalyzeUrl::AnalyzeUrl(
     std::string _mUrl,
     std::optional<std::string> _key,
@@ -723,7 +746,7 @@ void AnalyzeUrl::analyzeJs() {
         // 处理匹配前的普通文字
         if (matchStart > start) {
             std::string before = ruleUrl.substr(start, matchStart - start);
-            trim(before);
+            StringUtils::trim(before);
             if (!before.empty()) {
                 result = replaceAll(before, "@result", result);
             }
@@ -743,7 +766,7 @@ void AnalyzeUrl::analyzeJs() {
     }
     if (ruleUrl.length() > start) {
         std::string tail = ruleUrl.substr(start);
-        trim(tail);
+        StringUtils::trim(tail);
         if (!tail.empty()) {
             result = replaceAll(tail, "@result", result);
         }
@@ -833,10 +856,46 @@ void AnalyzeUrl::analyzeUrl() {
     }
 }
 
+#include <curl/curl.h>
+
+static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    size_t totalSize = size * nmemb;
+    auto* str = static_cast<std::string*>(userp);
+    str->append(static_cast<char*>(contents), totalSize);
+    return totalSize;
+}
+
+// 封装函数：输入 URL，返回响应内容
+std::string httpGet(const std::string& url) {
+    CURL* curl = curl_easy_init();
+    if (!curl) return "";
+
+    std::string response;
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+    // 如需忽略 HTTPS 证书错误（可选）
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    if (res != CURLE_OK) {
+        // 如果失败，返回空字符串，也可以抛异常或返回错误信息
+        return "";
+    }
+
+    return response;
+}
+
 StrResponse AnalyzeUrl::getStrResponse(
         std::string *jsStr ,
         std::string *sourceRegex,
         bool useWebView
     ) {
-    return StrResponse();
+    auto res = httpGet(url);
+    return StrResponse(url, res);
 }

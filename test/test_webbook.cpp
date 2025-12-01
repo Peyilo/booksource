@@ -8,7 +8,7 @@
 
 int main() {
     const auto bss = BookSourceParser::parseBookSourceList(getResourceText("bs2.json"));
-    auto bs = bss[12];      // 12: qidian.com
+    auto bs = bss[0];      // 12: qidian.com
     auto searchBooks = WebBook::searchBook(
         bs, "斗破"
     );

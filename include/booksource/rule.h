@@ -6,8 +6,13 @@
 #include <optional>
 #include <regex>
 #include <any>
+#include <unordered_set>
 #include <booksource/ruledata.h>
 #include <booksource/utils.h>
+#include <booksource/data.h>
+#include <booksource/constants.h>
+
+#include "rule.h"
 
 struct BookInfoRule {
     std::optional<std::string> init = std::nullopt;
@@ -89,7 +94,7 @@ class JsExtensions {
 public:
     virtual ~JsExtensions() = default;
 
-    virtual BaseSource* getSource() = 0;
+    virtual BaseSource *getSource() = 0;
 };
 
 class BaseSource : public JsExtensions {
@@ -105,13 +110,22 @@ public:
 
     virtual std::string getKey() = 0;
 
-    BaseSource* getSource() override {
+    BaseSource *getSource() override {
         return this;
     }
 
     std::optional<std::string> getLoginJs() const;
 
     std::unordered_map<std::string, std::string> getHeaderMap(bool hasLoginHeader = false);
+
+    std::string put(std::string key, std::string value) {
+        // TODO
+        return value;
+    }
+
+    std::string get(std::string key) {
+        return "";
+    }
 
     std::string evalJS(std::string jsStr);
 };
@@ -156,19 +170,37 @@ public:
      * 获取唯一标识key：这里使用书源url作为书源的唯一标识
      */
     std::string getKey() override;
+
+    SearchRule getSearchRule() {
+        if (ruleSearch.has_value()) {
+            return ruleSearch.value();
+        }
+        auto rule = SearchRule();
+        ruleSearch = rule;
+        return rule;
+    }
+
+    ExploreRule getExploreRule() {
+        if (ruleExplore.has_value()) {
+            return ruleExplore.value();
+        }
+        auto rule = ExploreRule();
+        ruleExplore = rule;
+        return rule;
+    }
 };
 
 class BookSourceParser {
 public:
-    static BookSource parseBookSource(const std::string& jsonStr);
+    static BookSource parseBookSource(const std::string &jsonStr);
 
-    static std::vector<BookSource> parseBookSourceList(const std::string& jsonStr);
+    static std::vector<BookSource> parseBookSourceList(const std::string &jsonStr);
 };
 
 class RuleAnalyzer {
 private:
-    std::string queue;      // 被处理字符串
-    size_t pos = 0;         // 当前处理到的位置
+    std::string queue; // 被处理字符串
+    size_t pos = 0; // 当前处理到的位置
     size_t start = 0;
     size_t startX = 0;
 
@@ -234,6 +266,14 @@ private:
 
 class StrResponse {
 public:
+    std::optional<std::string> body;
+    std::string url;
+
+    explicit StrResponse(
+        std::string _url,
+        std::optional<std::string> _body
+    ) : body(std::move(_body)), url(std::move(_url)) {
+    }
 };
 
 enum RequestMethod {
@@ -256,6 +296,7 @@ private:
     std::optional<std::string> js = std::nullopt;
     std::optional<long> serverID = std::nullopt;
     std::optional<long> webViewDelayTime = std::nullopt;
+
 public:
     void setMethod(std::optional<std::string> value) {
         method = value.has_value() && !value->empty() ? value : std::nullopt;
@@ -283,11 +324,12 @@ public:
 
     void setRetry(const std::optional<std::string> &value) {
         retry = value.has_value() && !value->empty()
-        ? std::optional(std::stoi(*value)) : std::nullopt;
+                    ? std::optional(std::stoi(*value))
+                    : std::nullopt;
     }
 
     int getRetry() const {
-       return retry ? *retry : 0;
+        return retry ? *retry : 0;
     }
 
     void setType(std::optional<std::string> value) {
@@ -302,11 +344,11 @@ public:
         if (!webView) return false;
         if (webView->type() == typeid(std::string)) {
             const auto str = std::any_cast<std::string>(*webView);
-            if (str.empty()) return false;      // 空字符串返回false
+            if (str.empty()) return false; // 空字符串返回false
             if (str == "false") return false;
         } else if (webView->type() == typeid(bool)) {
             const auto b = std::any_cast<bool>(*webView);
-            return b;           // webView为false时返回false
+            return b; // webView为false时返回false
         }
         return true;
     }
@@ -324,7 +366,6 @@ public:
             this->headers = map;
         }
     }
-
 };
 
 class AnalyzeUrl final : JsExtensions {
@@ -343,11 +384,13 @@ private:
     std::optional<std::unordered_map<std::string, std::string> > headerMapF = std::nullopt;
     bool hasLoginHeader = true;
 
+public:
     std::string ruleUrl;
     std::string url;
     std::optional<std::string> type = std::nullopt;
     std::unordered_map<std::string, std::string> headerMap;
 
+private:
     std::optional<std::string> body = std::nullopt;
     std::string urlNoQuery;
     std::optional<std::string> encodedForm = std::nullopt;
@@ -382,8 +425,7 @@ public:
     );
 
     std::string evalJS(const std::string &jsStr,
-        const std::optional<std::string> &result = std::nullopt);
-
+                       const std::optional<std::string> &result = std::nullopt);
 
 public:
     StrResponse getStrResponse(
@@ -397,8 +439,8 @@ public:
     }
 
 private:
-    std::regex paramPattern{R"(\s*,\s*(?=\{))"};    // 匹配 http://xx.xx/xxxx , { "method": "POST" } 中的逗号
-    std::regex pagePattern{R"(<.*?>)"};             // <a, b, c>
+    std::regex paramPattern{R"(\s*,\s*(?=\{))"}; // 匹配 http://xx.xx/xxxx , { "method": "POST" } 中的逗号
+    std::regex pagePattern{R"(<.*?>)"}; // <a, b, c>
 
     void initUrl();
 
@@ -415,3 +457,307 @@ private:
     void analyzeUrl();
 };
 
+class AnalyzeByXPath {
+};
+
+class AnalyzeByJSoup {
+};
+
+class AnalyzeByJSonPath {
+};
+
+enum Mode {
+    XPath, Json, Default, Js, Regex
+};
+
+class AnalyzeRule;
+
+class SourceRule {
+    AnalyzeRule& outer;
+    Mode mode;
+    std::string rule;
+    std::string replaceRegex = "";
+    std::string replacement = "";
+    bool replaceFirst = false;
+    std::unordered_map<std::string, std::string> putMap;
+    std::vector<std::string> ruleParam;
+
+public:
+    explicit SourceRule(
+        AnalyzeRule &_outer,
+        const std::string &ruleStr,
+        Mode mode = Default);
+};
+
+class AnalyzeRule : JsExtensions {
+private:
+    friend class SourceRule;
+    RuleDataInterface *ruleData = nullptr;
+    BaseSource *source = nullptr;
+    bool preUpdateJs = false;
+
+    BaseBook *book = nullptr;
+    BookChapter *chapter = nullptr;
+    std::optional<std::string> nextChapterUrl = std::nullopt;
+    std::optional<std::any> content = std::nullopt;
+    std::optional<std::string> baseUrl = std::nullopt;
+    std::optional<std::string> redirectUrl = std::nullopt;
+    bool isJSON = false;
+    bool isRegex = false;
+
+    std::optional<AnalyzeByXPath> analyzeByXPath = std::nullopt;
+    std::optional<AnalyzeByJSoup> analyzeByJSoup = std::nullopt;
+    std::optional<AnalyzeByJSonPath> analyzeByJSonPath = std::nullopt;
+
+    std::unordered_map<std::string, std::vector<SourceRule> > stringRuleCache{};
+    std::unordered_map<std::string, std::regex> regexCache{};
+    // private val scriptCache = hashMapOf<String, CompiledScript>()
+    // private var topScopeRef: WeakReference<Scriptable>? = null
+    int evalJSCallCount = 0;
+    bool loggedNonStandardJSON = false;
+
+public:
+    explicit AnalyzeRule(
+        RuleDataInterface *_ruleData = nullptr,
+        BaseSource *_source = nullptr,
+        const bool _preUpdateJs = false
+    ) : ruleData(_ruleData), source(_source), preUpdateJs(_preUpdateJs) {
+    }
+
+    AnalyzeRule &setContent(
+        std::optional<std::any> _content,
+        const std::optional<std::string> &_baseUrl = std::nullopt
+    ) {
+        if (!_content.has_value()) {
+            throw std::runtime_error("Content cannot be null");
+        }
+        content = _content.value();
+        // TODO: 根据content初始化isJSON变量
+        setBaseUrl(_baseUrl);
+        analyzeByJSonPath = std::nullopt;
+        analyzeByXPath = std::nullopt;
+        analyzeByJSoup = std::nullopt;
+        return *this;
+    }
+
+    AnalyzeRule &setBaseUrl(std::optional<std::string> _baseUrl) {
+        if (_baseUrl.has_value()) {
+            this->baseUrl = _baseUrl.value();
+        }
+        return *this;
+    }
+
+    std::optional<std::string> setRedirectUrl(std::string &url) {
+        if (NetworkUtils::isDataUrl(url)) {
+            return redirectUrl;
+        }
+        redirectUrl = url;
+        return redirectUrl;
+    }
+
+    std::vector<std::any> getElements(std::string ruleStr) {
+        std::vector<std::any> elements;
+        std::optional<std::any> result = std::nullopt;
+        auto content = this->content;
+        auto ruleList = splitSourceRule(ruleStr, true);
+        if (content.has_value() && !ruleList.empty()) {
+            result = content;
+            for (const auto &sourceRule : ruleList) {
+
+            }
+        }
+        return elements;
+    }
+
+    void putRule(std::unordered_map<std::string, std::string> &map) {
+        for (const auto &[key, value] : map) {
+            put(key , getString(value));
+        }
+    }
+
+    std::string getString(std::string ruleStr) {
+        // TODO
+        return ruleStr;
+    }
+
+    std::string put(const std::string &key, const std::string &value) const {
+        if (chapter != nullptr) {
+            chapter->putVariable(key, value);
+        } else if (book != nullptr) {
+            book->putVariable(key, value);
+        } else if (ruleData != nullptr) {
+            ruleData->putVariable(key, value);
+        } else if (source != nullptr) {
+            source->put(key, value);
+        }
+        return value;
+    }
+
+    std::vector<SourceRule> splitSourceRule(const std::optional<std::string> &ruleStr,
+        const bool allInOne = false) {
+        std::vector<SourceRule> ruleList;
+        if (StringUtils::isNullOrEmpty(ruleStr)) {
+            return ruleList;
+        }
+        auto mMode = Default;
+        int start = 0;
+        if (allInOne && ruleStr->starts_with(":")) {
+            mMode = Regex;
+            isRegex = true;
+            start = 1;
+        } else if (isRegex) {
+            mMode = Regex;
+        }
+        std::string tmp;
+        std::smatch match;
+
+        auto searchBegin = ruleStr->cbegin();
+
+        while (std::regex_search(searchBegin, ruleStr->cend(), match, Constants::JS_PATTERN)) {
+            const size_t matchStart = match.position() + std::distance(ruleStr->cbegin(), searchBegin);
+            const size_t matchEnd   = matchStart + match.length();
+
+            // 如果中间有普通规则
+            if (matchStart > start) {
+                tmp = ruleStr->substr(start, matchStart - start);
+                StringUtils::trim(tmp);
+                if (!tmp.empty()) {
+                    ruleList.emplace_back(*this, tmp, mMode);
+                }
+            }
+
+            // JS 部分，对应 group(2) ?: group(1)
+            std::string jsCode =
+                match[2].matched ? match[2].str() : match[1].str();
+
+            ruleList.emplace_back(*this, jsCode, Js);
+
+            start = matchEnd;
+            searchBegin = ruleStr->cbegin() + matchEnd;
+        }
+
+        // 最后一段
+        if (ruleStr->size() > start) {
+            tmp = ruleStr->substr(start);
+            StringUtils::trim(tmp);
+            if (!tmp.empty()) {
+                ruleList.emplace_back(*this, tmp, mMode);
+            }
+        }
+        return ruleList;
+    }
+
+    BaseSource *getSource() override {
+        return source;
+    }
+};
+
+namespace BookList {
+    using BookFilter = std::function<bool(const std::string &name, const std::string &author)>;
+
+    using BreakCondition = std::function<bool(int size)>;
+
+
+    static std::optional<SearchBook> getSearchItem() {
+        return std::nullopt;
+    }
+
+    /**
+    * 解析书籍列表，有两个用途：解析搜索结果的书籍列表和解析发现（分类/标签/排行等）结果的书籍列表
+    * @param bookSource 书源
+    * @param ruleData 规则数据
+    * @param analyzeUrl 解析地址对象
+    * @param baseUrl 给定关键字搜索或分类/标签/排行等的url链接，如：https://www.example.com/so/?searchkey=斗罗
+    * @param body 实际上就是给定关键字搜索或分类/标签/排行等地址返回的网页内容
+    * @param isSearch 是否为搜索
+    * @param isRedirect 是否为重定向后的地址
+    * @param filter 过滤器，返回 false 则过滤掉该书籍
+    * @param shouldBreak 当解析到的书籍数量满足中断条件时则中断，输入的size表示当前已解析到的书籍数量，返回值则表示是否中断
+    * @return 返回搜索到的书籍列表
+    */
+    std::vector<SearchBook> analyzeBookList(
+        BookSource &bookSource,
+        RuleData &ruleData,
+        AnalyzeUrl &analyzeUrl,
+        std::string &baseUrl,
+        const std::optional<std::string> &body,
+        bool isSearch = true,
+        bool isRedirect = false,
+        const std::optional<BookFilter> &filter = std::nullopt,
+        const std::optional<BreakCondition> &shouldBreak = std::nullopt
+    ) {
+        if (!body.has_value()) {
+            throw std::runtime_error("Failed to access website: " + analyzeUrl.ruleUrl);
+        }
+        std::vector<SearchBook> bookList;
+        auto analyzeRule = AnalyzeRule(&ruleData, &bookSource);
+        analyzeRule.setContent(body).setBaseUrl(baseUrl);
+        analyzeRule.setRedirectUrl(baseUrl);
+        if (isSearch) {
+            // TODO
+        }
+        auto reverse = false;
+        BookListRule bookListRule;
+        if (isSearch) {
+            bookListRule = static_cast<BookListRule>(bookSource.getSearchRule());
+        } else {
+            if (StringUtils::isNullOrEmpty(bookSource.getExploreRule().bookList)) {
+                bookListRule = static_cast<BookListRule>(bookSource.getSearchRule());
+            } else {
+                bookListRule = bookSource.getExploreRule();
+            }
+        }
+        std::string ruleList = bookListRule.bookList ? bookListRule.bookList.value() : ""; // 获取书籍列表规则
+        // 处理正反序: 如果书籍列表规则前有 - 号表示反序, + 号表示正序，默认为正序
+        if (!ruleList.empty() && ruleList[0] == '-') {
+            reverse = true;
+            ruleList = ruleList.substr(1);
+        } else if (!ruleList.empty() && ruleList[0] == '+') {
+            ruleList = ruleList.substr(1);
+        }
+        // 解析书籍列表对应的全部Elements，其中每个Element都对应于一本书籍
+        std::vector<std::any> collections = analyzeRule.getElements(ruleList);
+        if (!collections.empty() && StringUtils::isNullOrEmpty(bookSource.bookUrlPattern)) {
+            // TODO
+        } else {
+            auto ruleName = analyzeRule.splitSourceRule(bookListRule.name);
+            auto ruleBookUrl = analyzeRule.splitSourceRule(bookListRule.bookUrl);
+            auto ruleAuthor = analyzeRule.splitSourceRule(bookListRule.author);
+            auto ruleCoverUrl = analyzeRule.splitSourceRule(bookListRule.coverUrl);
+            auto ruleIntro = analyzeRule.splitSourceRule(bookListRule.intro);
+            auto ruleKind = analyzeRule.splitSourceRule(bookListRule.kind);
+            auto ruleLastChapter = analyzeRule.splitSourceRule(bookListRule.lastChapter);
+            auto ruleWordCount = analyzeRule.splitSourceRule(bookListRule.wordCount);
+            // 遍历全部书籍Elements，对每个书籍Element根据给定的书籍基本信息规则解析获得SearchBook
+            for (auto index = 0; index < collections.size(); index++) {
+                auto item = collections[index];
+                auto searchBook = getSearchItem();
+                if (searchBook.has_value()) {
+                    if (baseUrl == searchBook->bookUrl) {
+                        searchBook->infoHtml = body;
+                    }
+                    bookList.push_back(searchBook.value());
+                }
+                // 当解析到的书籍数量满足中断条件时则中断
+                if (shouldBreak.has_value() && shouldBreak.value()(bookList.size())) {
+                    break;
+                }
+            }
+            // 去重的同时保证顺序不变
+            std::unordered_set<SearchBook> seen;
+            std::vector<SearchBook> lh;
+            for (const auto& item : bookList) {
+                if (seen.insert(item).second) {
+                    lh.push_back(item);
+                }
+            }
+            bookList = lh;
+            // 处理顺序反转
+            if (reverse) {
+                std::ranges::reverse(bookList);
+            }
+        }
+        return bookList;
+    }
+
+};
