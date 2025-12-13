@@ -7,7 +7,6 @@
 #include <booksource/data.h>
 #include <booksource/rule.h>
 
-
 namespace WebBook {
     using BookFilter = std::function<bool(const std::string &name, const std::string &author)>;
 
